@@ -8,6 +8,11 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write          # Needed to push state.json back to repo
+
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
       - name: Checkout repo
@@ -23,7 +28,7 @@ jobs:
 
       - name: Run availability checker
         env:
-          GMAIL_ADDRESS:    ${{ secrets.GMAIL_ADDRESS }}
+          GMAIL_ADDRESS:      ${{ secrets.GMAIL_ADDRESS }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
         run: python checker.py --once
 
