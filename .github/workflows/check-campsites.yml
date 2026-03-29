@@ -1,0 +1,36 @@
+name: Check Beach Campsites
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'   # Every 15 minutes
+  workflow_dispatch:           # Allow manual trigger from GitHub UI
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run availability checker
+        env:
+          GMAIL_ADDRESS:    ${{ secrets.GMAIL_ADDRESS }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: python checker.py --once
+
+      - name: Save state back to repo
+        run: |
+          git config user.name  "campsite-bot"
+          git config user.email "campsite-bot@users.noreply.github.com"
+          git add state.json
+          git diff --staged --quiet || git commit -m "chore: update availability state [skip ci]"
+          git push

@@ -1,0 +1,15 @@
+{
+  "parks": [
+    "Kirk Creek Campground",
+    "Julia Pfeiffer Burns State Park",
+    "Plaskett Creek Campground",
+    "New Brighton State Beach",
+    "Manresa Uplands State Beach"
+  ],
+  "start_date": "2026-05-01",
+  "nights": 2,
+  "gmail": "monticasawant@gmail.com",
+  "app_password": "fetlbxpkjambhnrn",
+  "notify_email": "jay93shah@hotmail.com",
+  "interval_minutes": 15
+}

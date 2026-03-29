@@ -1,0 +1,13 @@
+[
+  {
+    "name": "Montica",
+    "notify_email": "monticasawant@gmail.com",
+    "parks": [
+      "Kirk Creek Campground",
+      "Limekiln State Park",
+      "Julia Pfeiffer Burns State Park"
+    ],
+    "start_date": "2026-06-01",
+    "nights": 2
+  }
+]

@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Beach Campsite Monitor · California</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #06090f;
+      --green-1:  #1b4332;
+      --green-2:  #2d6a4f;
+      --green-3:  #52b788;
+      --amber:    #dda15e;
+      --amber-2:  #bc6c25;
+      --cream:    #fefae0;
+      --muted:    rgba(254,250,224,0.55);
+      --glass:    rgba(255,255,255,0.04);
+      --border:   rgba(255,255,255,0.08);
+    }
+
+    html { font-size: 16px; scroll-behavior: smooth; }
+
+    body {
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--cream);
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 300;
+      overflow-x: hidden;
+    }
+
+    /* ── Stars canvas ── */
+    #stars {
+      position: fixed; inset: 0;
+      pointer-events: none; z-index: 0;
+    }
+
+    /* ── Gradient orbs ── */
+    .orb {
+      position: fixed; border-radius: 50%;
+      filter: blur(90px); opacity: 0.18;
+      pointer-events: none; z-index: 0;
+      animation: drift 18s ease-in-out infinite alternate;
+    }
+    .orb-1 { width: 500px; height: 500px; background: var(--green-1); top: -120px; left: -100px; animation-duration: 20s; }
+    .orb-2 { width: 350px; height: 350px; background: #0a3d2e; bottom: 5%; right: -80px; animation-duration: 25s; animation-delay: -8s; }
+    .orb-3 { width: 250px; height: 250px; background: var(--amber); top: 40%; left: 30%; opacity: 0.07; animation-duration: 30s; animation-delay: -15s; }
+    @keyframes drift {
+      from { transform: translate(0,0) scale(1); }
+      to   { transform: translate(30px, 40px) scale(1.08); }
+    }
+
+    /* ── Layout ── */
+    #app {
+      position: relative; z-index: 1;
+      max-width: 780px; margin: 0 auto;
+      padding: 60px 24px 80px;
+    }
+
+    /* ── Header ── */
+    header { text-align: center; margin-bottom: 56px; }
+    .tent-icon { font-size: 48px; display: block; margin-bottom: 16px; animation: sway 4s ease-in-out infinite alternate; }
+    @keyframes sway { from { transform: rotate(-4deg); } to { transform: rotate(4deg); } }
+    header h1 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(2.2rem, 5vw, 3rem);
+      font-weight: 300; letter-spacing: 0.03em;
+      color: var(--cream); margin-bottom: 10px;
+    }
+    header p { color: var(--muted); font-size: 15px; letter-spacing: 0.04em; }
+
+    /* ── Step indicator ── */
+    .step-indicator {
+      display: flex; align-items: center; justify-content: center;
+      gap: 0; margin-bottom: 40px;
+    }
+    .step-dot {
+      width: 32px; height: 32px; border-radius: 50%;
+      border: 1.5px solid var(--border);
+      background: var(--glass);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; color: var(--muted);
+      transition: all 0.4s ease; cursor: default;
+      position: relative;
+    }
+    .step-dot.active {
+      border-color: var(--green-3); background: rgba(82,183,136,0.15);
+      color: var(--green-3); font-weight: 500;
+    }
+    .step-dot.done {
+      border-color: var(--green-2); background: var(--green-2);
+      color: white;
+    }
+    .step-line {
+      width: 60px; height: 1px;
+      background: linear-gradient(90deg, var(--border), var(--border));
+      transition: background 0.4s;
+    }
+    .step-line.done { background: var(--green-2); }
+
+    /* ── Card ── */
+    .card {
+      background: var(--glass);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 36px 40px;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      margin-bottom: 24px;
+      display: none;
+    }
+    .card.active { display: block; animation: fadein 0.4s ease; }
+    @keyframes fadein { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:none; } }
+
+    .card-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.6rem; font-weight: 400;
+      color: var(--cream); margin-bottom: 6px;
+    }
+    .card-sub { color: var(--muted); font-size: 14px; margin-bottom: 28px; }
+
+    /* ── Park grid ── */
+    .parks-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .park-category {
+      grid-column: 1 / -1;
+      font-size: 11px; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--green-3);
+      margin: 16px 0 4px; opacity: 0.85;
+    }
+    .park-check {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px; border-radius: 10px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.02);
+      cursor: pointer; transition: all 0.2s;
+      font-size: 13.5px; color: var(--cream); line-height: 1.3;
+    }
+    .park-check:hover { border-color: rgba(82,183,136,0.4); background: rgba(82,183,136,0.07); }
+    .park-check input[type="checkbox"] { display: none; }
+    .park-check .box {
+      width: 18px; height: 18px; border-radius: 5px; flex-shrink: 0;
+      border: 1.5px solid rgba(255,255,255,0.2);
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s; background: transparent;
+    }
+    .park-check input:checked + .box {
+      background: var(--green-2); border-color: var(--green-2);
+    }
+    .park-check input:checked + .box::after { content: '✓'; color: white; font-size: 12px; font-weight: 600; }
+    .park-check.selected { border-color: rgba(82,183,136,0.5); background: rgba(82,183,136,0.1); }
+
+    .select-all-row { display: flex; gap: 12px; margin-bottom: 16px; }
+    .link-btn {
+      background: none; border: none; cursor: pointer;
+      font-size: 13px; color: var(--green-3); text-decoration: underline;
+      font-family: 'DM Sans', sans-serif; padding: 0;
+    }
+
+    /* ── Form fields ── */
+    .field { margin-bottom: 24px; }
+    .field label {
+      display: block; font-size: 13px; letter-spacing: 0.05em;
+      color: var(--muted); margin-bottom: 8px; text-transform: uppercase;
+    }
+    .field input, .field select {
+      width: 100%; padding: 12px 16px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      border-radius: 10px; color: var(--cream);
+      font-family: 'DM Sans', sans-serif; font-size: 15px;
+      transition: border-color 0.2s; outline: none;
+    }
+    .field input:focus, .field select:focus { border-color: var(--green-3); }
+    .field input::placeholder { color: rgba(255,255,255,0.25); }
+    .field select option { background: #1a2a1e; color: var(--cream); }
+
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+    .nights-display {
+      display: inline-block; margin-left: 12px;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.4rem; color: var(--green-3); vertical-align: middle;
+    }
+    input[type="range"] {
+      -webkit-appearance: none; width: 100%; height: 4px;
+      background: var(--border); border-radius: 2px; outline: none;
+      padding: 0; border: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 20px; height: 20px;
+      border-radius: 50%; background: var(--green-3); cursor: pointer;
+      box-shadow: 0 0 0 3px rgba(82,183,136,0.2);
+    }
+
+    /* ── Gmail setup box ── */
+    .info-box {
+      background: rgba(29,67,50,0.3); border: 1px solid rgba(82,183,136,0.2);
+      border-radius: 10px; padding: 16px 20px; margin-bottom: 24px;
+      font-size: 13.5px; line-height: 1.65; color: rgba(254,250,224,0.75);
+    }
+    .info-box a { color: var(--green-3); }
+    .info-box strong { color: var(--cream); }
+
+    /* ── Buttons ── */
+    .btn-row { display: flex; gap: 12px; margin-top: 8px; }
+    .btn {
+      padding: 13px 28px; border-radius: 10px; border: none;
+      font-family: 'DM Sans', sans-serif; font-size: 15px;
+      font-weight: 500; cursor: pointer; transition: all 0.2s;
+      letter-spacing: 0.02em;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--green-2), var(--green-1));
+      color: white;
+    }
+    .btn-primary:hover { background: linear-gradient(135deg, var(--green-3), var(--green-2)); transform: translateY(-1px); }
+    .btn-secondary {
+      background: transparent; border: 1px solid var(--border); color: var(--muted);
+    }
+    .btn-secondary:hover { border-color: var(--green-3); color: var(--cream); }
+    .btn-amber {
+      background: linear-gradient(135deg, var(--amber), var(--amber-2));
+      color: white;
+    }
+    .btn-amber:hover { filter: brightness(1.1); transform: translateY(-1px); }
+
+    /* ── Launch step ── */
+    .launch-hero { text-align: center; padding: 16px 0 32px; }
+    .launch-hero .big-icon { font-size: 64px; display: block; margin-bottom: 16px; }
+    .launch-hero h2 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 2rem; font-weight: 300; color: var(--cream); margin-bottom: 8px;
+    }
+    .launch-hero p { color: var(--muted); font-size: 15px; }
+
+    .terminal {
+      background: #0d1117; border: 1px solid #30363d;
+      border-radius: 10px; padding: 20px 24px; margin: 20px 0;
+      font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace;
+      font-size: 13.5px; line-height: 1.8; position: relative;
+    }
+    .terminal .prompt { color: #58a6ff; }
+    .terminal .cmd { color: #e6edf3; }
+    .terminal .comment { color: #6e7681; }
+
+    .copy-btn {
+      position: absolute; top: 12px; right: 12px;
+      padding: 5px 12px; border-radius: 6px;
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+      color: var(--muted); font-size: 12px; cursor: pointer;
+      font-family: 'DM Sans', sans-serif; transition: all 0.2s;
+    }
+    .copy-btn:hover { background: rgba(255,255,255,0.15); color: var(--cream); }
+
+    .config-preview {
+      background: #0d1117; border: 1px solid #30363d;
+      border-radius: 10px; padding: 20px 24px;
+      font-family: monospace; font-size: 12.5px;
+      line-height: 1.7; color: #e6edf3; white-space: pre;
+      overflow-x: auto; margin: 16px 0;
+    }
+
+    .summary-list { list-style: none; padding: 0; }
+    .summary-list li {
+      display: flex; gap: 12px; padding: 10px 0;
+      border-bottom: 1px solid var(--border); font-size: 14px;
+    }
+    .summary-list li:last-child { border: none; }
+    .summary-list .lbl { color: var(--muted); min-width: 90px; flex-shrink: 0; }
+    .summary-list .val { color: var(--cream); }
+
+    .notice {
+      margin-top: 24px; padding: 14px 18px;
+      background: rgba(221,161,94,0.1); border: 1px solid rgba(221,161,94,0.25);
+      border-radius: 10px; font-size: 13.5px; color: rgba(254,250,224,0.8);
+      line-height: 1.6;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 560px) {
+      .parks-grid { grid-template-columns: 1fr; }
+      .field-row  { grid-template-columns: 1fr; }
+      .card       { padding: 24px 20px; }
+      #app        { padding: 40px 16px 60px; }
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="stars"></canvas>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+
+<div id="app">
+
+  <!-- Header -->
+  <header>
+    <span class="tent-icon">🏕</span>
+    <h1>Beach Campsite Monitor</h1>
+    <p>California State Parks &nbsp;·&nbsp; Real-time availability alerts</p>
+  </header>
+
+  <!-- Step indicator -->
+  <div class="step-indicator">
+    <div class="step-dot active" id="dot-1">1</div>
+    <div class="step-line" id="line-1"></div>
+    <div class="step-dot" id="dot-2">2</div>
+    <div class="step-line" id="line-2"></div>
+    <div class="step-dot" id="dot-3">3</div>
+    <div class="step-line" id="line-3"></div>
+    <div class="step-dot" id="dot-4">4</div>
+  </div>
+
+  <!-- ── Step 1: Parks ── -->
+  <div class="card active" id="step-1">
+    <div class="card-title">Choose your parks</div>
+    <div class="card-sub">Select the beach campgrounds you want to monitor</div>
+
+    <div class="select-all-row">
+      <button class="link-btn" onclick="selectAll()">Select all</button>
+      <button class="link-btn" onclick="selectNone()">Clear</button>
+    </div>
+
+    <div class="parks-grid" id="parks-grid">
+      <!-- Injected by JS -->
+    </div>
+
+    <div class="btn-row" style="margin-top: 28px">
+      <button class="btn btn-primary" onclick="goStep(2)">Continue →</button>
+    </div>
+  </div>
+
+  <!-- ── Step 2: Dates ── -->
+  <div class="card" id="step-2">
+    <div class="card-title">Set your dates</div>
+    <div class="card-sub">When do you want to camp?</div>
+
+    <div class="field">
+      <label>Earliest arrival date</label>
+      <input type="date" id="start-date">
+    </div>
+
+    <div class="field">
+      <label>Number of nights <span class="nights-display" id="nights-val">2</span></label>
+      <input type="range" id="nights-slider" min="1" max="14" value="2"
+             oninput="document.getElementById('nights-val').textContent = this.value">
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="goStep(1)">← Back</button>
+      <button class="btn btn-primary" onclick="goStep(3)">Continue →</button>
+    </div>
+  </div>
+
+  <!-- ── Step 3: Notifications ── -->
+  <div class="card" id="step-3">
+    <div class="card-title">Your details</div>
+    <div class="card-sub">Where should we send the alert?</div>
+
+    <div class="info-box">
+      📬 Your email is only stored in the <strong>subscribers.json</strong> file in your GitHub repo —
+      never on any third-party server. Gmail credentials stay in <strong>GitHub Secrets</strong>, encrypted.
+    </div>
+
+    <div class="field">
+      <label>Your name</label>
+      <input type="text" id="sub-name" placeholder="Montica">
+    </div>
+
+    <div class="field">
+      <label>Email to send alerts to</label>
+      <input type="email" id="notify-email" placeholder="you@gmail.com">
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="goStep(2)">← Back</button>
+      <button class="btn btn-primary" onclick="goStep(4)">Generate Entry →</button>
+    </div>
+  </div>
+
+  <!-- ── Step 4: Launch ── -->
+  <div class="card" id="step-4">
+    <div class="launch-hero">
+      <span class="big-icon">🌊</span>
+      <h2>Almost there!</h2>
+      <p>Add this snippet to your <code style="font-size:14px;color:var(--green-3)">subscribers.json</code> on GitHub</p>
+    </div>
+
+    <ul class="summary-list" id="summary-list"></ul>
+
+    <!-- Subscriber snippet -->
+    <div style="margin-top: 28px">
+      <div style="font-size:13px;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);margin-bottom:10px">
+        Your subscriber entry — paste into subscribers.json
+      </div>
+      <div class="config-preview" id="config-preview"></div>
+      <button class="btn btn-amber" onclick="copySnippet()" style="width:100%;margin-bottom:8px" id="copy-snippet-btn">
+        Copy snippet
+      </button>
+    </div>
+
+    <!-- Setup steps -->
+    <div style="margin-top: 28px">
+      <div style="font-size:13px;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);margin-bottom:16px">
+        One-time GitHub setup
+      </div>
+
+      <div class="info-box" style="line-height:2">
+        <strong>Step 1 — Push the code to GitHub</strong><br>
+        Create a new repo at <a href="https://github.com/new" target="_blank">github.com/new</a>, then:<br>
+        <code style="font-size:12px;color:var(--green-3)">
+          cd ~/Claude/campsite-notifier<br>
+          git init && git add . && git commit -m "init"<br>
+          git remote add origin https://github.com/YOUR_USERNAME/campsite-notifier.git<br>
+          git push -u origin main
+        </code><br><br>
+
+        <strong>Step 2 — Add Gmail secrets</strong><br>
+        In your GitHub repo → <strong>Settings → Secrets → Actions → New repository secret</strong><br>
+        Add two secrets:<br>
+        &nbsp;&nbsp;• <code style="color:var(--green-3)">GMAIL_ADDRESS</code> = your Gmail address<br>
+        &nbsp;&nbsp;• <code style="color:var(--green-3)">GMAIL_APP_PASSWORD</code> = your
+        <a href="https://myaccount.google.com/apppasswords" target="_blank">Gmail App Password</a><br><br>
+
+        <strong>Step 3 — Enable Actions</strong><br>
+        Go to the <strong>Actions</strong> tab in your repo → click <strong>"Enable GitHub Actions"</strong><br><br>
+
+        <strong>That's it!</strong> 🎉 GitHub runs the checker every 15 min automatically.
+      </div>
+    </div>
+
+    <!-- Adding friends -->
+    <div style="margin-top: 20px">
+      <div style="font-size:13px;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);margin-bottom:10px">
+        Adding a friend
+      </div>
+      <div class="info-box">
+        Share this page with your friend → they fill in their parks + dates → copy their snippet →
+        you paste it into <strong>subscribers.json</strong> in your GitHub repo and commit.
+        GitHub picks it up on the next run automatically.
+      </div>
+    </div>
+
+    <div class="btn-row" style="margin-top: 24px">
+      <button class="btn btn-secondary" onclick="goStep(3)">← Back</button>
+    </div>
+  </div>
+
+</div><!-- #app -->
+
+<script>
+// ── Park data ──────────────────────────────────────────────────────────────
+const PARKS = {
+  "🌊 Big Sur — Bluffs & Redwoods": [
+    "Kirk Creek Campground",
+    "Limekiln State Park",
+    "Julia Pfeiffer Burns State Park",
+    "Plaskett Creek Campground",
+    "Andrew Molera State Park",
+  ],
+  "🏖 Santa Cruz & Aptos — Sandy Beaches": [
+    "New Brighton State Beach",
+    "Manresa Uplands State Beach",
+    "Sunset State Beach",
+    "Seacliff State Beach",
+  ],
+  "🌅 Carmel & Monterey": [
+    "Asilomar State Beach",
+    "Pfeiffer Big Sur State Park",
+  ],
+  "☀️ Central Coast — SLO / Santa Barbara": [
+    "Morro Strand State Beach",
+    "Morro Bay State Park",
+    "Pismo State Beach - Oceano",
+    "El Capitan State Beach",
+    "Refugio State Beach",
+    "Emma Wood State Beach",
+    "McGrath State Beach",
+  ],
+  "🌴 Southern California": [
+    "Leo Carrillo State Park",
+    "Point Mugu State Park",
+    "Doheny State Beach",
+    "San Clemente State Beach",
+    "Crystal Cove State Park",
+    "Bolsa Chica State Beach",
+    "Silver Strand State Beach",
+    "Carpinteria State Beach",
+  ],
+  "🌲 Northern California — Sonoma Coast": [
+    "Bodega Dunes (Sonoma Coast SP)",
+    "Wrights Beach (Sonoma Coast SP)",
+    "MacKerricher State Park",
+    "Westport-Union Landing SB",
+    "Half Moon Bay State Beach",
+    "Bean Hollow State Beach",
+  ],
+};
+
+// Also need to map new parks to API search terms
+const PARK_SEARCH = {
+  "Kirk Creek Campground":         "Kirk Creek",
+  "Limekiln State Park":           "Limekiln",
+  "Julia Pfeiffer Burns State Park":"Julia Pfeiffer",
+  "Plaskett Creek Campground":     "Plaskett",
+  "Andrew Molera State Park":      "Andrew Molera",
+  "New Brighton State Beach":      "New Brighton",
+  "Manresa Uplands State Beach":   "Manresa",
+  "Sunset State Beach":            "Sunset",
+  "Seacliff State Beach":          "Seacliff",
+  "Asilomar State Beach":          "Asilomar",
+  "Pfeiffer Big Sur State Park":   "Pfeiffer Big Sur",
+  "Morro Strand State Beach":      "Morro Strand",
+  "Morro Bay State Park":          "Morro Bay",
+  "Pismo State Beach - Oceano":    "Oceano",
+  "El Capitan State Beach":        "El Capitan",
+  "Refugio State Beach":           "Refugio",
+  "Emma Wood State Beach":         "Emma Wood",
+  "McGrath State Beach":           "McGrath",
+  "Leo Carrillo State Park":       "Leo Carrillo",
+  "Point Mugu State Park":         "Point Mugu",
+  "Doheny State Beach":            "Doheny",
+  "San Clemente State Beach":      "San Clemente",
+  "Crystal Cove State Park":       "Crystal Cove",
+  "Bolsa Chica State Beach":       "Bolsa Chica",
+  "Silver Strand State Beach":     "Silver Strand",
+  "Carpinteria State Beach":       "Carpinteria",
+  "Bodega Dunes (Sonoma Coast SP)":"Bodega Dunes",
+  "Wrights Beach (Sonoma Coast SP)":"Wrights Beach",
+  "MacKerricher State Park":       "MacKerricher",
+  "Westport-Union Landing SB":     "Westport",
+  "Half Moon Bay State Beach":     "Half Moon Bay",
+  "Bean Hollow State Beach":       "Bean Hollow",
+};
+
+// ── Render park checkboxes ────────────────────────────────────────────────
+const grid = document.getElementById('parks-grid');
+for (const [category, parks] of Object.entries(PARKS)) {
+  const cat = document.createElement('div');
+  cat.className = 'park-category';
+  cat.textContent = category;
+  grid.appendChild(cat);
+  for (const park of parks) {
+    const label = document.createElement('label');
+    label.className = 'park-check';
+    label.innerHTML = `
+      <input type="checkbox" name="park" value="${park}">
+      <span class="box"></span>
+      <span>${park}</span>`;
+    label.querySelector('input').addEventListener('change', e => {
+      label.classList.toggle('selected', e.target.checked);
+    });
+    grid.appendChild(label);
+  }
+}
+
+function selectAll()  { document.querySelectorAll('.park-check input').forEach(c => { c.checked=true;  c.closest('label').classList.add('selected'); }); }
+function selectNone() { document.querySelectorAll('.park-check input').forEach(c => { c.checked=false; c.closest('label').classList.remove('selected'); }); }
+
+// ── Set default date to tomorrow ──────────────────────────────────────────
+const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+document.getElementById('start-date').value = tomorrow.toISOString().split('T')[0];
+document.getElementById('start-date').min    = tomorrow.toISOString().split('T')[0];
+
+// ── Step navigation ────────────────────────────────────────────────────────
+function goStep(n) {
+  if (n === 2) {
+    const parks = getSelectedParks();
+    if (!parks.length) { alert('Please select at least one park.'); return; }
+  }
+  if (n === 4) {
+    if (!document.getElementById('sub-name').value)     { alert('Please enter your name.'); return; }
+    if (!document.getElementById('notify-email').value) { alert('Please enter a notification email.'); return; }
+    buildLaunchStep();
+  }
+
+  document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
+  document.getElementById(`step-${n}`).classList.add('active');
+
+  // Update dots
+  for (let i = 1; i <= 4; i++) {
+    const dot  = document.getElementById(`dot-${i}`);
+    dot.classList.remove('active','done');
+    if (i < n)       dot.classList.add('done'), dot.textContent = '✓';
+    else if (i === n) dot.classList.add('active'), dot.textContent = i;
+    else              dot.textContent = i;
+  }
+  for (let i = 1; i <= 3; i++) {
+    document.getElementById(`line-${i}`).classList.toggle('done', i < n);
+  }
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function getSelectedParks() {
+  return [...document.querySelectorAll('.park-check input:checked')].map(c => c.value);
+}
+
+// ── Build launch step ─────────────────────────────────────────────────────
+function buildLaunchStep() {
+  const parks  = getSelectedParks();
+  const date   = document.getElementById('start-date').value;
+  const nights = document.getElementById('nights-slider').value;
+  const name   = document.getElementById('sub-name').value.trim();
+  const notify = document.getElementById('notify-email').value.trim();
+
+  window._subscriber = { name, notify_email: notify, parks, start_date: date, nights: parseInt(nights) };
+
+  // Summary
+  const sl = document.getElementById('summary-list');
+  sl.innerHTML = `
+    <li><span class="lbl">Name</span><span class="val">${name}</span></li>
+    <li><span class="lbl">Parks</span><span class="val">${parks.length} selected</span></li>
+    <li><span class="lbl">Arrival</span><span class="val">${date}</span></li>
+    <li><span class="lbl">Nights</span><span class="val">${nights}</span></li>
+    <li><span class="lbl">Alert to</span><span class="val">${notify}</span></li>
+  `;
+
+  // Subscriber snippet
+  document.getElementById('config-preview').textContent = JSON.stringify(window._subscriber, null, 2);
+}
+
+window._subscriber = null;
+
+function copySnippet() {
+  if (!window._subscriber) return;
+  const text = JSON.stringify(window._subscriber, null, 2);
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copy-snippet-btn');
+    btn.textContent = '✓ Copied!';
+    setTimeout(() => btn.textContent = 'Copy snippet', 1800);
+  });
+}
+
+// ── Starfield ──────────────────────────────────────────────────────────────
+(function () {
+  const canvas = document.getElementById('stars');
+  const ctx = canvas.getContext('2d');
+  let stars = [];
+
+  function resize() {
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+    stars = Array.from({ length: 180 }, () => ({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      r: Math.random() * 1.4 + 0.2,
+      base: Math.random() * 0.6 + 0.2,
+      speed: Math.random() * 0.015 + 0.004,
+      offset: Math.random() * Math.PI * 2,
+    }));
+  }
+
+  function draw(t) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (const s of stars) {
+      const alpha = s.base * (0.6 + 0.4 * Math.sin(t * s.speed + s.offset));
+      ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    requestAnimationFrame(draw);
+  }
+
+  window.addEventListener('resize', resize);
+  resize();
+  requestAnimationFrame(draw);
+})();
+</script>
+</body>
+</html>
